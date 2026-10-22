@@ -1,73 +1,79 @@
-class InvalidSalaryError(Exception):
-   
-    pass
+import csv
+import json
+import os
+import requests
 
-def bonus(salary, rate=0.1, *extras, **options):
-    total_bonus = (salary * rate) + sum(extras)
-    if 'cap' in options:
-        total_bonus = min(total_bonus, options['cap'])
-    return total_bonus
+from dotenv import load_dotenv
 
 
-class Employee:
-    def __init__(self, name, salary):
-        if salary < 0:
-            raise InvalidSalaryError(f"Invalid salary: {salary}")
-        self.name = name
-        self.salary = salary
+load_dotenv()
+api_key = os.getenv("API_KEY")
 
-    def annual_salary(self):
-        return self.salary * 12
+employees = []
+high_earners = []
 
-    def get_details(self):
-        return f"Name: {self.name}, Salary: {self.salary}"
-
-
-class Manager(Employee):
-    def __init__(self, name, salary, team_size):
-        super().__init__(name, salary)
-        self.team_size = team_size
-
-    def get_details(self):
-        return f"{super().get_details()}, Team Size: {self.team_size}"
+with open("employees.csv", mode="r", newline="", encoding="utf-8") as f:
+    reader = csv.DictReader(f)
+    for row in reader:
+        employees.append(row)
+        
+        if int(row["salary"]) > 50000:
+            high_earners.append(row)
 
 
-
-employees_data = [
-    {"id": 1, "name": "Arun", "department": "Sales", "salary": 30000, "city": "Chennai"},
-    {"id": 2, "name": "Priya", "department": "HR", "salary": 45000, "city": "Chennai"},
-    {"id": 3, "name": "Rahul", "department": "IT", "salary": 60000, "city": "Bangalore"},
-    {"id": 4, "name": "Divya", "department": "IT", "salary": 75000, "city": "Chennai"},
-    {"id": 5, "name": "Karthik", "department": "Finance", "salary": 90000, "city": "Mumbai"},
-    {"id": 6, "name": "Meena", "department": "Sales", "salary": 52000, "city": "Bangalore"},
-    {"id": 7, "name": "Suresh", "department": "IT", "salary": 68000, "city": "Chennai"},
-    {"id": 8, "name": "Anitha", "department": "HR", "salary": 48000, "city": "Mumbai"},
-]
-
-above_50k = [emp["name"] for emp in employees_data if emp["salary"] > 50000]
-print(f"Above 50000: {above_50k}")
-
-salaries_with_raise = list(map(lambda emp: {**emp, "salary": emp["salary"] * 1.1}, employees_data))
+with open("employee.csv", mode="w", encoding="utf-8") as f:
+    json.dump(employees, f, indent=4)
 
 
-chennai_employees = list(filter(lambda emp: emp["city"] == "Chennai", employees_data))
-chennai_names = [emp["name"] for emp in chennai_employees]
-print(f"Chennai: {chennai_names}")
+if high_earners:
+    with open("employee.csv", mode="w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=high_earners[0].keys())
+        writer.writeheader()
+        writer.writerows(high_earners)
+
+print(f"Rows read: {len(employees)} | High earners: {len(high_earners)}")
 
 
-
-for emp in employees_data:
-    if emp["salary"] == 0:
-        continue
-    if emp["salary"] > 85000:
-        break
-
-
+base_url = "https://jsonplaceholder.typicode.com/users"
 
 try:
     
-    invalid_emp = Employee("Test", -500)
-except InvalidSalaryError as e:
-    print(f"Error: {e}")
-finally:
-    print("Transaction finished")
+    response = requests.get(base_url, timeout=5)
+    response.raise_for_status()
+    users = response.json()
+    
+    
+    if users:
+        first_user = users[0]
+        name = first_user.get("name")
+        email = first_user.get("email")
+        uid = first_user.get("id")
+        print(f"{uid} - {name} -> {email}")
+
+    with open("empolyee.csv", mode="w", encoding="utf-8") as f:
+        json.dump(users, f, indent=4)
+
+except requests.exceptions.Timeout:
+    print("Error: The request timed out.")
+
+except requests.exceptions.ConnectionError:
+    print("Error: A connection error occurred.")
+    
+except requests.exceptions.HTTPError as e:
+    print(f"HTTP Error occurred: {e}")
+
+try:
+    url_404 = f"{base_url}/9999"
+    res_404 = requests.get(url_404, timeout=5)
+    
+    if res_404.status_code == 404:
+        print("/users/9999 -> 404 Not found")
+    else:
+        res_404.raise_for_status()
+        
+except requests.exceptions.Timeout:
+    print("Error: The request timed out.")
+except requests.exceptions.ConnectionError:
+    print("Error: A connection error occurred.")
+except requests.exceptions.HTTPError as e:
+    print(f"HTTP Error occurred: {e}")
