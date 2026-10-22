@@ -11,7 +11,7 @@ api_key = os.getenv("API_KEY")
 employees = []
 high_earners = []
 
-with open("employees.csv", newline="", encoding="utf-8") as f:
+with open("employees.csv", "r",newline="", encoding="utf-8") as f:
     reader = list(csv.DictReader(f))
     for row in reader:
         employees.append(row)
