@@ -2,7 +2,6 @@ import csv
 import json
 import os
 import requests
-
 from dotenv import load_dotenv
 
 
@@ -12,8 +11,8 @@ api_key = os.getenv("API_KEY")
 employees = []
 high_earners = []
 
-with open("employees.csv", mode="r", newline="", encoding="utf-8") as f:
-    reader = csv.DictReader(f)
+with open("employees.csv", newline="", encoding="utf-8") as f:
+    reader = list(csv.DictReader(f))
     for row in reader:
         employees.append(row)
         
@@ -21,17 +20,29 @@ with open("employees.csv", mode="r", newline="", encoding="utf-8") as f:
             high_earners.append(row)
 
 
-with open("employee.csv", mode="w", encoding="utf-8") as f:
+with open("employees.json",mode="w", encoding="utf-8") as f:
     json.dump(employees, f, indent=4)
 
 
 if high_earners:
-    with open("employee.csv", mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=high_earners[0].keys())
+    with open("high_earners.csv", mode="w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=row[0].keys())
         writer.writeheader()
         writer.writerows(high_earners)
 
 print(f"Rows read: {len(employees)} | High earners: {len(high_earners)}")
+
+
+def load_dotkey():
+    load_dotenv
+    key = os.getenv("api_key")
+    if not key:
+        print("Warning: api_key not found in .env")
+    else:
+        print("api_key loaded successfully")
+        return key
+
+
 
 
 base_url = "https://jsonplaceholder.typicode.com/users"
@@ -49,16 +60,15 @@ try:
         email = first_user.get("email")
         uid = first_user.get("id")
         print(f"{uid} - {name} -> {email}")
-
-    with open("empolyee.csv", mode="w", encoding="utf-8") as f:
+        
+    
+    with open("users.json", mode="w", encoding="utf-8") as f:
         json.dump(users, f, indent=4)
 
 except requests.exceptions.Timeout:
     print("Error: The request timed out.")
-
 except requests.exceptions.ConnectionError:
     print("Error: A connection error occurred.")
-    
 except requests.exceptions.HTTPError as e:
     print(f"HTTP Error occurred: {e}")
 
